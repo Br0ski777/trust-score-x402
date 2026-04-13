@@ -44,6 +44,28 @@ Do NOT use for SEO analysis -- use seo_audit_page instead. Do NOT use for email 
         },
         required: ["target"],
       },
+      outputSchema: {
+        type: "object",
+        properties: {
+          target: { type: "string" },
+          type: { type: "string", enum: ["domain", "wallet", "ip"] },
+          compositeScore: { type: "number", description: "0-100 trust score" },
+          grade: { type: "string", enum: ["A+", "A", "B", "C", "D", "F"] },
+          verdict: { type: "string", enum: ["trusted", "moderate", "suspicious", "dangerous"] },
+          subscores: {
+            type: "object",
+            properties: {
+              ssl: { type: "object", properties: { score: { type: "number" }, grade: { type: "string" }, details: { type: "array" } } },
+              dns: { type: "object", properties: { score: { type: "number" }, details: { type: "array" } } },
+              whois: { type: "object", properties: { score: { type: "number" }, domainAge: { type: "number" }, registrar: { type: "string" } } },
+              headers: { type: "object", properties: { score: { type: "number" }, missing: { type: "array" } } },
+              content: { type: "object", properties: { score: { type: "number" }, latencyMs: { type: "number" } } },
+            },
+          },
+          timestamp: { type: "string" },
+        },
+        required: ["target", "compositeScore", "grade", "verdict"],
+      },
     },
     {
       method: "POST",
@@ -75,6 +97,30 @@ Do NOT use for single targets -- use trust_score_evaluate instead (cheaper at $0
           },
         },
         required: ["targets"],
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          count: { type: "number", description: "Number of targets evaluated" },
+          mostTrusted: { type: "string", description: "Target with the highest trust score" },
+          leastTrusted: { type: "string", description: "Target with the lowest trust score" },
+          results: {
+            type: "array",
+            description: "Array of trust score results sorted by score descending",
+            items: {
+              type: "object",
+              properties: {
+                target: { type: "string" },
+                compositeScore: { type: "number" },
+                grade: { type: "string" },
+                verdict: { type: "string" },
+                subscores: { type: "object" },
+              },
+            },
+          },
+          timestamp: { type: "string", description: "ISO 8601 timestamp" },
+        },
+        required: ["count", "mostTrusted", "leastTrusted", "results"],
       },
     },
   ],
