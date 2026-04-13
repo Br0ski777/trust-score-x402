@@ -1,31 +1,45 @@
 import type { ApiConfig } from "./shared.ts";
 
 export const API_CONFIG: ApiConfig = {
-  name: "trust-score",
+  name: "Trust Score API",
   slug: "trust-score",
-  description: "Unified trust scoring for domains, wallets, and APIs — SSL, WHOIS, DNS, headers, content analysis",
+  description: "Evaluate trustworthiness of any domain, URL, wallet, or API. Returns 0-100 score with 5 sub-scores: SSL, DNS, WHOIS, security headers, content. Zero-cost, zero-dependency. The trust layer agents need before interacting with unknown services.",
   version: "1.0.0",
   routes: [
     {
       method: "POST",
       path: "/api/score",
       price: "$0.01",
-      description: "Full trust score for a domain, URL, wallet, or API endpoint — returns 0-100 composite with sub-scores",
+      description: "Evaluate trust of a domain, URL, wallet address, or API endpoint. Returns composite score 0-100 with grade (A+ to F), verdict (trusted/moderate/suspicious/dangerous), and 5 detailed sub-scores.",
       toolName: "trust_score_evaluate",
       toolDescription:
-        "Use this when you need to evaluate the trustworthiness of a domain, website, API endpoint, or crypto wallet address before interacting with it. Returns a composite score 0-100 with sub-scores for SSL/TLS, DNS health, domain age/reputation, security headers, and content signals. Use this BEFORE making payments, sending data, or trusting any external service. Do NOT use for SEO analysis — use seo_audit_page instead. Do NOT use for email validation — use email_verify_address instead. Do NOT use for tech stack detection — use website_detect_tech_stack instead.",
+        `Use this when you need to check if a domain, website, API endpoint, or crypto wallet is safe to interact with. Returns a composite trust score 0-100 with letter grade (A+ to F), verdict (trusted/moderate/suspicious/dangerous), and 5 sub-scores:
+
+1. SSL/TLS (25%): certificate validity, HSTS, expiry, issuer
+2. DNS (15%): A/AAAA/MX/NS records, SPF, DMARC, DNSSEC
+3. WHOIS (25%): domain age, registrar reputation, expiry, suspicious TLDs
+4. Security Headers (20%): CSP, X-Frame-Options, HSTS, Referrer-Policy, Permissions-Policy
+5. Content (15%): reachability, latency, status code, robots.txt, CORS
+
+For wallet addresses (0x...): returns on-chain trust based on transaction count, ETH/USDC balance, contract status on Base L2.
+
+Example output: { compositeScore: 82, grade: "A", verdict: "trusted", subscores: { ssl: { score: 90, ... }, dns: { score: 85, ... }, ... } }
+
+Use this BEFORE making payments, sending sensitive data, or trusting any external service. Essential for agent safety.
+
+Do NOT use for SEO analysis -- use seo_audit_page instead. Do NOT use for email validation -- use email_verify_address instead. Do NOT use for tech stack detection -- use website_detect_tech_stack instead. Do NOT use for port scanning -- use network_scan_ports instead.`,
       inputSchema: {
         type: "object",
         properties: {
           target: {
             type: "string",
             description:
-              "Domain (example.com), full URL (https://example.com/api), wallet address (0x...), or IP address to evaluate",
+              "Domain (example.com), full URL (https://api.example.com/v1), wallet address (0x...), or IP address to evaluate",
           },
           checks: {
             type: "array",
             items: { type: "string", enum: ["ssl", "dns", "whois", "headers", "content", "all"] },
-            description: "Which checks to run. Default: all. Use subset for faster results.",
+            description: "Which checks to run. Default: all. Pass a subset like [\"ssl\",\"dns\"] for faster results (under 2s). Full scan takes 3-8s.",
           },
         },
         required: ["target"],
@@ -35,10 +49,20 @@ export const API_CONFIG: ApiConfig = {
       method: "POST",
       path: "/api/batch",
       price: "$0.02",
-      description: "Batch trust scoring — evaluate up to 5 targets at once",
-      toolName: "trust_score_batch",
+      description: "Compare trustworthiness of 2-5 targets side by side. Returns all scores ranked from most to least trusted.",
+      toolName: "trust_score_batch_compare",
       toolDescription:
-        "Use this when you need to compare trustworthiness of multiple domains, URLs, or wallets side by side. Accepts 2-5 targets and returns scores for all. Useful for choosing the most trustworthy option from a list. Do NOT use for single targets — use trust_score_evaluate instead.",
+        `Use this when you need to compare the trustworthiness of multiple domains, URLs, or wallets and pick the safest option. Accepts 2-5 targets and returns trust scores for all, sorted from most to least trusted.
+
+Returns: { mostTrusted: "...", leastTrusted: "...", results: [{ compositeScore, grade, verdict, subscores }] }
+
+Use cases:
+- Comparing API providers before choosing one
+- Verifying multiple domains from a search result
+- Ranking wallet addresses by on-chain reputation
+- Due diligence on a list of services
+
+Do NOT use for single targets -- use trust_score_evaluate instead (cheaper at $0.01 vs $0.02).`,
       inputSchema: {
         type: "object",
         properties: {
@@ -47,7 +71,7 @@ export const API_CONFIG: ApiConfig = {
             items: { type: "string" },
             minItems: 2,
             maxItems: 5,
-            description: "List of domains, URLs, or wallet addresses to evaluate (2-5)",
+            description: "List of 2-5 domains, URLs, or wallet addresses to evaluate and rank",
           },
         },
         required: ["targets"],
