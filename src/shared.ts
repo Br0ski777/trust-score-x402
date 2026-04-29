@@ -42,6 +42,18 @@ export function x402scanEnrichMiddleware(routes: RouteConfig[]) {
       if (paymentHeader) {
         try {
           const decoded = JSON.parse(Buffer.from(paymentHeader, "base64").toString("utf-8"));
+
+          // Bug 24 fix: Railway terminates TLS upstream — c.req.url is http://, but CDP Bazaar
+          // only indexes https:// resources (verified: 200/200 entries on /discovery use https,
+          // 0 use http). Rewrite resource.url to https using x-forwarded-proto / x-forwarded-host.
+          if (decoded.resource?.url?.startsWith("http://")) {
+            const proto = c.req.header("x-forwarded-proto") || "https";
+            const host = c.req.header("x-forwarded-host") || c.req.header("host");
+            if (host) {
+              const path = new URL(decoded.resource.url).pathname;
+              decoded.resource.url = `${proto}://${host}${path}`;
+            }
+          }
           const reqPath = new URL(c.req.url).pathname;
           const reqMethod = c.req.method;
           const key = `${reqMethod} ${reqPath}`;
