@@ -12,7 +12,7 @@
   "remotes": [
     {
       "type": "sse",
-      "url": "https://trust-score-x402-production.up.railway.app/mcp"
+      "url": "https://trust-score.api.klymax402.com/mcp"
     }
   ]
 }
