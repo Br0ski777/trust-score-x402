@@ -1,120 +1,99 @@
 # Trust Score API
 
-**Unified trust scoring for domains, wallets, and APIs. Score 0-100 with 5 sub-scores. Powered by x402 micropayments.**
+[![MCP Server](https://img.shields.io/badge/MCP-server-blue)](https://trust-score.api.klymax402.com/mcp)
+[![x402](https://img.shields.io/badge/payments-x402-6E56CF)](https://x402.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-The trust layer AI agents need before interacting with unknown services. One API call tells you if a domain, wallet, or endpoint is safe.
+Evaluate trustworthiness of any domain, URL, wallet, or API. Returns 0-100 score with 5 sub-scores: SSL, DNS, WHOIS, security headers, content. Zero-cost, zero-dependency. The trust layer agents need before interacting with unknown services. Pay-per-call via [x402](https://x402.org) (USDC on Base L2) -- no API key, no signup, no rate-limit wall.
 
-## What It Scores
+Part of the [klymax402](https://klymax402.com) marketplace -- 100 x402 micropayment APIs for AI agents, one wallet, USDC on Base.
 
-| Sub-score | Weight | What it checks |
-|-----------|--------|----------------|
-| **SSL/TLS** | 25% | Certificate validity, HSTS, expiry, issuer, preload |
-| **WHOIS** | 25% | Domain age, registrar reputation, expiry date, suspicious TLDs |
-| **Security Headers** | 20% | CSP, X-Frame-Options, HSTS, Referrer-Policy, Permissions-Policy, X-Content-Type-Options |
-| **DNS** | 15% | A/AAAA/MX/NS records, SPF, DMARC, DNSSEC |
-| **Content** | 15% | Reachability, latency, status code, robots.txt, favicon, CORS |
+## Quickstart -- MCP
 
-For **wallet addresses** (0x...): transaction count, ETH/USDC balance, contract detection on Base L2.
-
-## Endpoints
-
-### `POST /api/score` - $0.01/call
-
-Evaluate a single target.
-
-```json
-{
-  "target": "example.com",
-  "checks": ["all"]
-}
-```
-
-Response:
-```json
-{
-  "target": "example.com",
-  "type": "domain",
-  "compositeScore": 72,
-  "grade": "B",
-  "verdict": "moderate",
-  "subscores": {
-    "ssl": { "score": 90, "grade": "A+", "valid": true, "details": ["HTTPS active", "HSTS max-age=31536000 (1yr+)"] },
-    "dns": { "score": 85, "details": ["2 A record(s)", "SPF configured", "DMARC configured"] },
-    "whois": { "score": 60, "domainAge": 10957, "registrar": "Cloudflare, Inc.", "details": ["Domain age: 30 years"] },
-    "headers": { "score": 55, "missing": ["content-security-policy", "permissions-policy"], "details": ["x-frame-options: DENY"] },
-    "content": { "score": 70, "latencyMs": 234, "details": ["Status: 200 OK", "Latency: 234ms (fast)"] }
-  },
-  "timestamp": "2026-04-13T10:45:00.000Z",
-  "cachedFor": "5m"
-}
-```
-
-### `POST /api/batch` - $0.02/call
-
-Compare 2-5 targets side by side, ranked by trust score.
-
-```json
-{
-  "targets": ["google.com", "sketchy-site.tk", "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"]
-}
-```
-
-Response:
-```json
-{
-  "count": 3,
-  "mostTrusted": "google.com",
-  "leastTrusted": "sketchy-site.tk",
-  "results": [
-    { "target": "google.com", "compositeScore": 82, "grade": "A", "verdict": "trusted" },
-    { "target": "0xd8dA...", "compositeScore": 70, "grade": "B", "verdict": "moderate" },
-    { "target": "sketchy-site.tk", "compositeScore": 15, "grade": "F", "verdict": "dangerous" }
-  ]
-}
-```
-
-## Grading Scale
-
-| Score | Grade | Verdict | Meaning |
-|-------|-------|---------|---------|
-| 90-100 | A+ | trusted | Excellent security posture, well-established |
-| 75-89 | A | trusted | Good security, minor improvements possible |
-| 60-74 | B | moderate | Acceptable, some security gaps |
-| 40-59 | C | moderate | Below average, multiple issues |
-| 20-39 | D | suspicious | Poor security, use with caution |
-| 0-19 | F | dangerous | Critical issues, avoid interaction |
-
-## Use Cases
-
-- **Before payments**: Check if an API or wallet is trustworthy before sending USDC
-- **Agent safety**: Verify domains before scraping, crawling, or sending data
-- **Due diligence**: Compare multiple service providers
-- **Phishing detection**: Score suspicious URLs from emails or messages
-- **Wallet vetting**: Check on-chain reputation before transacting
-
-## MCP Integration
-
-Works with Claude Desktop, Cursor, Copilot, and any MCP-compatible client.
+Add to your MCP client config (Claude Desktop, Cursor, ElizaOS, etc.):
 
 ```json
 {
   "mcpServers": {
     "trust-score": {
-      "url": "https://trust-score-production-ff18.up.railway.app/mcp",
-      "transport": "sse"
+      "url": "https://trust-score.api.klymax402.com/mcp"
     }
   }
 }
 ```
 
+## Quickstart -- HTTP (x402)
+
+```bash
+curl -X POST "https://trust-score.api.klymax402.com/api/score" \
+  -H "Content-Type: application/json" \
+  -d '{"target":"..."}'
+# -> 402 Payment Required, with an x402 payment challenge in the response body
+```
+
+Any x402-aware client ([`@x402/fetch`](https://www.npmjs.com/package/@x402/fetch), [`x402-agent-tools`](https://www.npmjs.com/package/x402-agent-tools), ATXP) handles the 402 -> sign -> retry cycle automatically.
+
+## Tools
+
+| Tool | Method | Path | Price | Description |
+|---|---|---|---|---|
+| `trust_score_evaluate` | POST | `/api/score` | $0.01 | Evaluate trust of a domain, URL, wallet address, or API endpoint. Returns composite score 0-100 with grade (A+ to F), verdict (trusted/moderate/suspicious/dangerous), and 5 detailed sub-scores. |
+| `trust_score_batch_compare` | POST | `/api/batch` | $0.02 | Compare trustworthiness of 2-5 targets side by side. Returns all scores ranked from most to least trusted. |
+
+### `trust_score_evaluate`
+
+Use this when you need to check if a domain, website, API endpoint, or crypto wallet is safe to interact with. Returns a composite trust score 0-100 with letter grade (A+ to F), verdict (trusted/moderate/suspicious/dangerous), and 5 sub-scores:
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `target` | string | yes | Domain (example.com), full URL (https://api.example.com/v1), wallet address (0x...), or IP address to evaluate |
+| `checks` | array | no | Which checks to run. Default: all. Pass a subset like ["ssl","dns"] for faster results (under 2s). Full scan takes 3-8s. |
+
+Example response:
+
+```json
+{ compositeScore: 82, grade: "A", verdict: "trusted", subscores: { ssl: { score: 90, ... }, dns: { score: 85, ... }, ... } }
+```
+
+**When to use**: making payments, sending sensitive data, or trusting any external service. Essential for agent safety.
+
+**Not for**: SEO analysis (use `seo_audit_page`), email validation (use `email_verify_address`), tech stack detection (use `website_detect_tech_stack`), port scanning (use `network_scan_ports`).
+
+### `trust_score_batch_compare`
+
+Use this when you need to compare the trustworthiness of multiple domains, URLs, or wallets and pick the safest option. Accepts 2-5 targets and returns trust scores for all, sorted from most to least trusted.
+
+**Parameters**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `targets` | array | yes | List of 2-5 domains, URLs, or wallet addresses to evaluate and rank |
+
+**Not for**: single targets (use `trust_score_evaluate`).
+
+## Example agent prompts
+
+- "Check if a domain, website, API endpoint, or crypto wallet is safe to interact with"
+- "Compare the trustworthiness of multiple domains, URLs, or wallets and pick the safest option"
+
 ## Payment
 
-Uses x402 protocol. Send a request, get HTTP 402 with price, your agent signs USDC on Base automatically. No API keys, no signup.
+- Protocol: [x402](https://x402.org) -- HTTP-native pay-per-call, no signup, no API key
+- Network: Base L2 (`eip155:8453`)
+- Asset: USDC
+- Facilitator: Coinbase CDP (primary), PayAI (fallback)
+- Also reachable via [ATXP](https://atxp.ai) (OAuth-wrapped x402, RFC 9728 protected-resource metadata)
 
-## Related APIs
+## Part of klymax402
 
-- [SSL Checker](https://ssl-checker-production-3dda.up.railway.app) - Deep SSL certificate analysis
-- [DNS Lookup](https://dns-lookup-production-437a.up.railway.app) - Full DNS record query
-- [Domain Intelligence](https://domain-intelligence-x402-production.up.railway.app) - WHOIS + DNS + SSL combined
-- [SEO Analyzer](https://seo-analyzer-x402-production.up.railway.app) - Full SEO audit (different from trust)
-- [Port Scanner](https://port-scanner-production-c3e2.up.railway.app) - Network port scanning
+100 x402 micropayment APIs for AI agents -- one wallet, USDC on Base, zero signup.
+
+- Catalog: https://klymax402.com/llms.txt
+- Full API reference: https://klymax402.com/llms-full.txt
+- Live stats: https://klymax402.com/stats
+
+## License
+
+MIT
