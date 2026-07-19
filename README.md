@@ -37,8 +37,8 @@ Any x402-aware client ([`@x402/fetch`](https://www.npmjs.com/package/@x402/fetch
 
 | Tool | Method | Path | Price | Description |
 |---|---|---|---|---|
-| `trust_score_evaluate` | POST | `/api/score` | $0.01 | Evaluate trust of a domain, URL, wallet address, or API endpoint. Returns composite score 0-100 with grade (A+ to F), verdict (trusted/moderate/suspicious/dangerous), and 5 detailed sub-scores. |
-| `trust_score_batch_compare` | POST | `/api/batch` | $0.02 | Compare trustworthiness of 2-5 targets side by side. Returns all scores ranked from most to least trusted. |
+| `trust_score_evaluate` | POST | `/api/score` | $0.02 | Evaluate trust of a domain, URL, wallet address, or API endpoint. Returns composite score 0-100 with grade (A+ to F), verdict (trusted/moderate/suspicious/dangerous), and 5 detailed sub-scores. |
+| `trust_score_batch_compare` | POST | `/api/batch` | $0.03 | Compare trustworthiness of 2-5 targets side by side. Returns all scores ranked from most to least trusted. |
 
 ### `trust_score_evaluate`
 
