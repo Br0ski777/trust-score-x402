@@ -9,7 +9,7 @@ export const API_CONFIG: ApiConfig = {
     {
       method: "POST",
       path: "/api/score",
-      price: "$0.01",
+      price: "$0.02",
       description: "Evaluate trust of a domain, URL, wallet address, or API endpoint. Returns composite score 0-100 with grade (A+ to F), verdict (trusted/moderate/suspicious/dangerous), and 5 detailed sub-scores.",
       toolName: "trust_score_evaluate",
       toolDescription:
@@ -70,7 +70,7 @@ Do NOT use for SEO analysis -- use seo_audit_page instead. Do NOT use for email 
     {
       method: "POST",
       path: "/api/batch",
-      price: "$0.02",
+      price: "$0.03",
       description: "Compare trustworthiness of 2-5 targets side by side. Returns all scores ranked from most to least trusted.",
       toolName: "trust_score_batch_compare",
       toolDescription:
